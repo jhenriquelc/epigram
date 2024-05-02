@@ -181,7 +181,11 @@ fn main() -> Result<(), u8> {
 
     let ini_string = if let Some(mut input) = input {
         if input.is_tty() {
-            eprintln!("Reading ini dictionary from stdin, close with ^D (EOF)...")
+            if cfg!(unix){
+                eprintln!("Reading ini dictionary from stdin, close with ^D (EOF)...")
+            } else if cfg!(windows) {
+                eprintln!("Reading ini dictionary from input, close with Ctrl+Z (EOF)...")
+            }
         }
         
         let mut buf = String::new();
