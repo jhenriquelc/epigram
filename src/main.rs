@@ -41,6 +41,18 @@ pub enum PartOfSpeech {
     Adverb,
 }
 
+impl From<&PartOfSpeech> for String {
+    fn from(value: &PartOfSpeech) -> Self {
+        match value {
+            PartOfSpeech::Verb => "verb",
+            PartOfSpeech::Noun => "noun",
+            PartOfSpeech::Adjective => "adjective",
+            PartOfSpeech::Adverb => "adverb",
+        }
+        .to_string()
+    }
+}
+
 impl TryFrom<&str> for PartOfSpeech {
     type Error = Error;
 
