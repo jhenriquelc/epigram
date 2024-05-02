@@ -9,6 +9,16 @@ type IniMap = HashMap<String, HashMap<String, Option<String>>>;
 #[derive(Debug)]
 pub enum Error {
     InvalidHeader(String),
+    MissingHeader(Vec<PartOfSpeech>),
+}
+
+fn pos_vec_to_string(parts_of_speech: &Vec<PartOfSpeech>) -> String {
+    let mut buf = String::new();
+    for pos in parts_of_speech {
+        buf.push_str(String::from(pos).as_str());
+        buf.push_str(", ");
+    }
+    buf.trim_end_matches(", ").to_string()
 }
 
 impl std::fmt::Display for Error {
@@ -20,6 +30,10 @@ impl std::fmt::Display for Error {
                 Error::InvalidHeader(invalid_pos) => format!(
                     "\"{}\" isn't recognized as a valid part of speech.",
                     invalid_pos
+                ),
+                Error::MissingHeader(missing_headers) => format!(
+                    "The following part of speech headers are missing from your dictionary: {}",
+                    pos_vec_to_string(missing_headers)
                 ),
             }
         )
