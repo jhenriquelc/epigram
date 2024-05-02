@@ -113,6 +113,16 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
                 return Err(Error::InvalidHeader(section.clone()));
             }
         }
+        let mut missing_parts_of_speech = Vec::new();
+        for part_of_speech in PartOfSpeech::iter() {
+            let field = dict.get_part_of_speech(&part_of_speech);
+            if field.len() == 0 {
+                missing_parts_of_speech.push(part_of_speech);
+            }
+        }
+        if missing_parts_of_speech.len() != 0 {
+            return Err(Error::MissingHeader(missing_parts_of_speech));
+        }
         Ok(dict)
     }
 }
@@ -196,9 +206,11 @@ fn main() -> Result<(), u8> {
     };
 
     for _ in 0..count {
-        if let Some(phrase) = dict.get_phrase() {
-            println!("{}", phrase)
-        }
+        println!(
+            "{}",
+            dict.get_phrase()
+                .expect("all dictionary parts of speech should be filled.")
+        )
     }
 
     Ok(())
