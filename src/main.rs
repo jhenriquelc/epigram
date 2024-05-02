@@ -163,7 +163,7 @@ impl<'a> Dictionary<'a> {
 #[command(version, about, long_about = None)]
 struct Args {
     #[arg(value_parser)]
-    dictionary_file: Input,
+    dictionary_file: Option<Input>,
 
     #[arg(short = 'n', long, default_value_t = 1, group = "len")]
     count: u128,
@@ -174,25 +174,30 @@ struct Args {
 
 fn main() -> Result<(), u8> {
     let Args {
-        dictionary_file: mut input,
+        dictionary_file: input,
         count,
         infinite,
     } = Args::parse();
 
-    if input.is_tty() {
-        eprintln!("Reading ini dictionary from stdin, close with ^D (EOF)...")
-    }
-
-    let mut buf = String::new();
-    let e = input.lock().read_to_string(&mut buf);
-    match e {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("Could not decode file: {e}");
-            exit(2);
+    let ini_string = if let Some(mut input) = input {
+        if input.is_tty() {
+            eprintln!("Reading ini dictionary from stdin, close with ^D (EOF)...")
         }
-    }
-    let ini_string = buf;
+        
+        let mut buf = String::new();
+        let e = input.lock().read_to_string(&mut buf);
+        match e {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Could not decode file: {e}");
+                exit(2);
+            }
+        }
+        buf
+    } else {
+        include_str!("./dictionary.ini").to_string()
+    };
+    
 
     let parsed = Ini::new().read(ini_string);
     let map = match parsed {
