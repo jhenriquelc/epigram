@@ -1,6 +1,9 @@
 use configparser::ini::Ini;
 use rand::seq::SliceRandom;
 use std::{self, collections::HashMap, process::exit};
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
+
 type IniMap = HashMap<String, HashMap<String, Option<String>>>;
 
 #[derive(Debug)]
@@ -33,7 +36,7 @@ impl std::error::Error for Error {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, EnumIter)]
 pub enum PartOfSpeech {
     Verb,
     Noun,
@@ -57,15 +60,14 @@ impl TryFrom<&str> for PartOfSpeech {
     type Error = Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.to_lowercase().trim().trim_end_matches('s') {
-            "verb" => Ok(PartOfSpeech::Verb),
-            "noun" => Ok(PartOfSpeech::Noun),
-            "adjective" => Ok(PartOfSpeech::Adjective),
-            "adverb" => Ok(PartOfSpeech::Adverb),
-            _ => Err(Error::InvalidHeader(format!(
-                "\"{value}\" is not a valid part of speech."
-            ))),
+        for pos in PartOfSpeech::iter() {
+            if String::from(&pos) == value.to_lowercase().trim().trim_end_matches('s') {
+                return Ok(pos);
+            }
         }
+        Err(
+            Error::InvalidHeader(value.to_string())
+        )
     }
 }
 
