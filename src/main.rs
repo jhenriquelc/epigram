@@ -2,7 +2,7 @@ use clap::Parser;
 use clio::{self, Input};
 use configparser::ini::Ini;
 use rand::seq::SliceRandom;
-use std::{self, collections::HashMap, process::exit};
+use std::{self, collections::HashMap, hash::Hash, process::exit};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -52,7 +52,7 @@ impl std::error::Error for Error {
     }
 }
 
-#[derive(Debug, EnumIter, Clone, Copy)]
+#[derive(Debug, EnumIter, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PartOfSpeech {
     Verb,
     Noun,
@@ -87,22 +87,14 @@ impl TryFrom<&str> for PartOfSpeech {
 
 #[derive(Debug)]
 pub struct Dictionary<'a> {
-    verbs: Vec<&'a str>,
-    nouns: Vec<&'a str>,
-    adjectives: Vec<&'a str>,
-    adverbs: Vec<&'a str>,
+    map: HashMap<PartOfSpeech, Vec<&'a str>>,
 }
 
 impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
     type Error = Error;
 
     fn try_from(ini_map: &'a IniMap) -> Result<Dictionary<'a>, Error> {
-        let mut dict = Dictionary {
-            verbs: Vec::new(),
-            nouns: Vec::new(),
-            adjectives: Vec::new(),
-            adverbs: Vec::new(),
-        };
+        let mut dict = Dictionary::new();
         for (section, keys) in ini_map.iter() {
             let keys: Vec<&str> = keys.iter().map(|(key, _)| key.as_str()).collect();
 
@@ -128,32 +120,42 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
 }
 
 impl<'a> Dictionary<'a> {
+    fn new() -> Self {
+        let mut dict = Dictionary {
+            map: HashMap::new(),
+        };
+        for part_of_speech in PartOfSpeech::iter() {
+            dict.map.entry(part_of_speech).or_insert(Vec::new());
+        }
+        dict
+    }
+
     fn get_phrase(&self) -> Option<String> {
         let mut rng = rand::thread_rng();
-        let adjective = self.adjectives.choose(&mut rng)?;
-        let noun = self.nouns.choose(&mut rng)?;
-        let verb = self.verbs.choose(&mut rng)?;
-        let adverb = self.adverbs.choose(&mut rng)?;
+        let adjective = self
+            .get_part_of_speech(PartOfSpeech::Adjective)
+            .choose(&mut rng)?;
+        let noun = self
+            .get_part_of_speech(PartOfSpeech::Noun)
+            .choose(&mut rng)?;
+        let verb = self
+            .get_part_of_speech(PartOfSpeech::Verb)
+            .choose(&mut rng)?;
+        let adverb = self
+            .get_part_of_speech(PartOfSpeech::Adverb)
+            .choose(&mut rng)?;
 
         Some(format!("The {adjective} {noun} {verb} {adverb}."))
     }
 
     pub fn get_part_of_speech(&self, part_of_speech: PartOfSpeech) -> &Vec<&str> {
-        match part_of_speech {
-            PartOfSpeech::Verb => &self.verbs,
-            PartOfSpeech::Noun => &self.nouns,
-            PartOfSpeech::Adjective => &self.adjectives,
-            PartOfSpeech::Adverb => &self.adverbs,
-        }
+        self.map.get(&part_of_speech).expect(
+            "Dictionary should be initialized with empty vectors for each PartOfSpeech variant",
+        )
     }
 
     pub fn get_part_of_speech_mut(&mut self, part_of_speech: PartOfSpeech) -> &mut Vec<&'a str> {
-        match part_of_speech {
-            PartOfSpeech::Verb => &mut self.verbs,
-            PartOfSpeech::Noun => &mut self.nouns,
-            PartOfSpeech::Adjective => &mut self.adjectives,
-            PartOfSpeech::Adverb => &mut self.adverbs,
-        }
+        self.map.entry(part_of_speech).or_insert(Vec::new())
     }
 }
 
