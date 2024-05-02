@@ -121,7 +121,7 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
     }
 }
 
-impl Dictionary<'_> {
+impl<'a> Dictionary<'a> {
     fn get_phrase(&self) -> Option<String> {
         let mut rng = rand::thread_rng();
         let adjective = self.adjectives.choose(&mut rng)?;
@@ -138,6 +138,15 @@ impl Dictionary<'_> {
             PartOfSpeech::Noun => &self.nouns,
             PartOfSpeech::Adjective => &self.adjectives,
             PartOfSpeech::Adverb => &self.adverbs,
+        }
+    }
+
+    pub fn get_part_of_speech_mut(&mut self, part_of_speech: &PartOfSpeech) -> &mut Vec<&'a str> {
+        match part_of_speech {
+            PartOfSpeech::Verb => &mut self.verbs,
+            PartOfSpeech::Noun => &mut self.nouns,
+            PartOfSpeech::Adjective => &mut self.adjectives,
+            PartOfSpeech::Adverb => &mut self.adverbs,
         }
     }
 }
