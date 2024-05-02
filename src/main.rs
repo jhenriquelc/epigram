@@ -163,14 +163,18 @@ struct Args {
     #[arg(value_parser)]
     dictionary_file: Input,
 
-    #[arg(short = 'n', long, default_value_t = 1)]
+    #[arg(short = 'n', long, default_value_t = 1, group = "len")]
     count: u128,
+
+    #[arg(short, long, group = "len")]
+    infinite: bool,
 }
 
 fn main() -> Result<(), u8> {
     let Args {
         dictionary_file: mut input,
         count,
+        infinite,
     } = Args::parse();
 
     if input.is_tty() {
@@ -205,12 +209,22 @@ fn main() -> Result<(), u8> {
         }
     };
 
-    for _ in 0..count {
+    fn print_phrase(dict: &Dictionary) {
         println!(
             "{}",
             dict.get_phrase()
                 .expect("all dictionary parts of speech should be filled.")
         )
+    }
+
+    if infinite {
+        loop {
+            print_phrase(&dict)
+        }
+    } else {
+        for _ in 0..count {
+            print_phrase(&dict)
+        }
     }
 
     Ok(())
