@@ -131,6 +131,15 @@ impl Dictionary<'_> {
 
         Some(format!("The {adjective} {noun} {verb} {adverb}."))
     }
+
+    pub fn get_part_of_speech(&self, part_of_speech: &PartOfSpeech) -> &Vec<&str> {
+        match part_of_speech {
+            PartOfSpeech::Verb => &self.verbs,
+            PartOfSpeech::Noun => &self.nouns,
+            PartOfSpeech::Adjective => &self.adjectives,
+            PartOfSpeech::Adverb => &self.adverbs,
+        }
+    }
 }
 
 #[derive(Parser, Debug)]
