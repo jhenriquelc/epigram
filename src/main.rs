@@ -16,7 +16,7 @@ pub enum Error {
 
 fn pos_vec_to_string(parts_of_speech: &Vec<PartOfSpeech>) -> String {
     let mut buf = String::new();
-    for pos in parts_of_speech {
+    for &pos in parts_of_speech {
         buf.push_str(String::from(pos).as_str());
         buf.push_str(", ");
     }
@@ -52,7 +52,7 @@ impl std::error::Error for Error {
     }
 }
 
-#[derive(Debug, EnumIter)]
+#[derive(Debug, EnumIter, Clone, Copy)]
 pub enum PartOfSpeech {
     Verb,
     Noun,
@@ -60,8 +60,8 @@ pub enum PartOfSpeech {
     Adverb,
 }
 
-impl From<&PartOfSpeech> for String {
-    fn from(value: &PartOfSpeech) -> Self {
+impl From<PartOfSpeech> for String {
+    fn from(value: PartOfSpeech) -> Self {
         match value {
             PartOfSpeech::Verb => "verb",
             PartOfSpeech::Noun => "noun",
@@ -77,7 +77,7 @@ impl TryFrom<&str> for PartOfSpeech {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         for pos in PartOfSpeech::iter() {
-            if String::from(&pos) == value.to_lowercase().trim().trim_end_matches('s') {
+            if String::from(pos) == value.to_lowercase().trim().trim_end_matches('s') {
                 return Ok(pos);
             }
         }
@@ -107,7 +107,7 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
             let keys: Vec<&str> = keys.iter().map(|(key, _)| key.as_str()).collect();
 
             if let Ok(part_of_speech) = PartOfSpeech::try_from(section.as_str()) {
-                let field = dict.get_part_of_speech_mut(&part_of_speech);
+                let field = dict.get_part_of_speech_mut(part_of_speech);
                 *field = keys;
             } else {
                 return Err(Error::InvalidHeader(section.clone()));
@@ -115,7 +115,7 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
         }
         let mut missing_parts_of_speech = Vec::new();
         for part_of_speech in PartOfSpeech::iter() {
-            let field = dict.get_part_of_speech(&part_of_speech);
+            let field = dict.get_part_of_speech(part_of_speech);
             if field.len() == 0 {
                 missing_parts_of_speech.push(part_of_speech);
             }
@@ -138,7 +138,7 @@ impl<'a> Dictionary<'a> {
         Some(format!("The {adjective} {noun} {verb} {adverb}."))
     }
 
-    pub fn get_part_of_speech(&self, part_of_speech: &PartOfSpeech) -> &Vec<&str> {
+    pub fn get_part_of_speech(&self, part_of_speech: PartOfSpeech) -> &Vec<&str> {
         match part_of_speech {
             PartOfSpeech::Verb => &self.verbs,
             PartOfSpeech::Noun => &self.nouns,
@@ -147,7 +147,7 @@ impl<'a> Dictionary<'a> {
         }
     }
 
-    pub fn get_part_of_speech_mut(&mut self, part_of_speech: &PartOfSpeech) -> &mut Vec<&'a str> {
+    pub fn get_part_of_speech_mut(&mut self, part_of_speech: PartOfSpeech) -> &mut Vec<&'a str> {
         match part_of_speech {
             PartOfSpeech::Verb => &mut self.verbs,
             PartOfSpeech::Noun => &mut self.nouns,
