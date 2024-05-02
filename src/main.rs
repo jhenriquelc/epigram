@@ -107,12 +107,8 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
             let keys: Vec<&str> = keys.iter().map(|(key, _)| key.as_str()).collect();
 
             if let Ok(part_of_speech) = PartOfSpeech::try_from(section.as_str()) {
-                match part_of_speech {
-                    PartOfSpeech::Verb => dict.verbs = keys,
-                    PartOfSpeech::Noun => dict.nouns = keys,
-                    PartOfSpeech::Adjective => dict.adjectives = keys,
-                    PartOfSpeech::Adverb => dict.adverbs = keys,
-                }
+                let field = dict.get_part_of_speech_mut(&part_of_speech);
+                *field = keys;
             } else {
                 return Err(Error::InvalidHeader(section.clone()));
             }
