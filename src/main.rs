@@ -1,3 +1,5 @@
+use clap::Parser;
+use clio::{self, Input};
 use configparser::ini::Ini;
 use rand::seq::SliceRandom;
 use std::{self, collections::HashMap, process::exit};
@@ -131,26 +133,59 @@ impl Dictionary<'_> {
     }
 }
 
-fn main() -> Result<(), u8> {
-    let filename = "./data/dictionary.ini";
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(value_parser)]
+    dictionary_file: Input,
 
-    let file = match Ini::new().load(filename) {
-        Ok(file) => file,
+    #[arg(short = 'n', long, default_value_t = 1)]
+    count: u128,
+}
+
+fn main() -> Result<(), u8> {
+    let Args {
+        dictionary_file: mut input,
+        count,
+    } = Args::parse();
+
+    if input.is_tty() {
+        eprintln!("Reading ini dictionary from stdin, close with ^D (EOF)...")
+    }
+
+    let mut buf = String::new();
+    let e = input.lock().read_to_string(&mut buf);
+    match e {
+        Ok(_) => {}
         Err(e) => {
-            eprintln!("Could not open \"{filename}\": {}", e);
+            eprintln!("Could not decode file: {e}");
+            exit(2);
+        }
+    }
+    let ini_string = buf;
+
+    let parsed = Ini::new().read(ini_string);
+    let map = match parsed {
+        Ok(map) => map,
+        Err(e) => {
+            eprintln!("Could not parse ini: {}", e);
             exit(1);
         }
     };
 
-    let dict = match Dictionary::try_from(&file) {
+    let dict = match Dictionary::try_from(&map) {
         Ok(dict) => dict,
         Err(e) => {
             eprintln!("{}", e);
             exit(3);
-        },
+        }
     };
 
-    println!("{}", dict.get_phrase().unwrap_or("".to_string()));
+    for _ in 0..count {
+        if let Some(phrase) = dict.get_phrase() {
+            println!("{}", phrase)
+        }
+    }
 
     Ok(())
 }
