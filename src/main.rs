@@ -79,9 +79,7 @@ impl TryFrom<&str> for PartOfSpeech {
                 return Ok(pos);
             }
         }
-        Err(
-            Error::InvalidHeader(value.to_string())
-        )
+        Err(Error::InvalidHeader(value.to_string()))
     }
 }
 
@@ -93,8 +91,10 @@ pub struct Dictionary<'a> {
     adverbs: Vec<&'a str>,
 }
 
-impl<'a> From<&'a IniMap> for Dictionary<'a> {
-    fn from(ini_map: &'a IniMap) -> Self {
+impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
+    type Error = Error;
+
+    fn try_from(ini_map: &'a IniMap) -> Result<Dictionary<'a>, Error> {
         let mut dict = Dictionary {
             verbs: Vec::new(),
             nouns: Vec::new(),
@@ -111,9 +111,11 @@ impl<'a> From<&'a IniMap> for Dictionary<'a> {
                     PartOfSpeech::Adjective => dict.adjectives = keys,
                     PartOfSpeech::Adverb => dict.adverbs = keys,
                 }
+            } else {
+                return Err(Error::InvalidHeader(section.clone()));
             }
         }
-        dict
+        Ok(dict)
     }
 }
 
@@ -140,7 +142,13 @@ fn main() -> Result<(), u8> {
         }
     };
 
-    let dict = Dictionary::from(&file);
+    let dict = match Dictionary::try_from(&file) {
+        Ok(dict) => dict,
+        Err(e) => {
+            eprintln!("{}", e);
+            exit(3);
+        },
+    };
 
     println!("{}", dict.get_phrase().unwrap_or("".to_string()));
 
