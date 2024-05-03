@@ -120,7 +120,7 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
 }
 
 impl<'a> Dictionary<'a> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut dict = Dictionary {
             map: HashMap::new(),
         };
@@ -130,7 +130,7 @@ impl<'a> Dictionary<'a> {
         dict
     }
 
-    fn get_phrase(&self) -> Option<String> {
+    pub fn get_phrase(&self) -> Option<String> {
         let mut rng = rand::thread_rng();
         let adjective = self
             .get_part_of_speech(PartOfSpeech::Adjective)
