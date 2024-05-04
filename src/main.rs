@@ -22,17 +22,18 @@ pub enum Error {
     MissingHeader(Vec<PartOfSpeech>),
 }
 
-fn pos_vec_to_string(parts_of_speech: &Vec<PartOfSpeech>) -> String {
-    let mut buf = String::new();
-    for &pos in parts_of_speech {
-        buf.push_str(String::from(pos).as_str());
-        buf.push_str(", ");
-    }
-    buf.trim_end_matches(", ").to_string()
-}
-
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        
+        fn pos_vec_to_string(parts_of_speech: &Vec<PartOfSpeech>) -> String {
+            let mut buf = String::new();
+            for &pos in parts_of_speech {
+                buf.push_str(String::from(pos).as_str());
+                buf.push_str(", ");
+            }
+            buf.trim_end_matches(", ").to_string()
+        }
+
         write!(
             f,
             "{}",
