@@ -8,6 +8,8 @@ use strum_macros::EnumIter;
 
 type IniMap = HashMap<String, HashMap<String, Option<String>>>;
 
+const BUILT_IN_DICTIONARY_STR: &str = include_str!("./dictionary.ini");
+
 #[derive(Debug)]
 pub enum Error {
     InvalidHeader(String),
@@ -181,13 +183,13 @@ fn main() -> Result<(), u8> {
 
     let ini_string = if let Some(mut input) = input {
         if input.is_tty() {
-            if cfg!(unix){
+            if cfg!(unix) {
                 eprintln!("Reading ini dictionary from stdin, close with ^D (EOF)...")
             } else if cfg!(windows) {
                 eprintln!("Reading ini dictionary from input, close with Ctrl+Z (EOF)...")
             }
         }
-        
+
         let mut buf = String::new();
         let e = input.lock().read_to_string(&mut buf);
         match e {
@@ -199,9 +201,8 @@ fn main() -> Result<(), u8> {
         }
         buf
     } else {
-        include_str!("./dictionary.ini").to_string()
+        BUILT_IN_DICTIONARY_STR.to_string()
     };
-    
 
     let parsed = Ini::new().read(ini_string);
     let map = match parsed {
@@ -239,4 +240,17 @@ fn main() -> Result<(), u8> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn make_dictionary_from_builtin() {
+        let map = Ini::new()
+            .read(BUILT_IN_DICTIONARY_STR.to_string())
+            .expect("valid ini");
+        let _dict = Dictionary::try_from(&map).expect("valid dictionary");
+    }
 }
