@@ -1,7 +1,7 @@
 //! > **CLI random phrase generator**
 //!
-//! Oracle generates random phrases from a pool of categorized words.
-//! Run `oracle --help` for CLI syntax.
+//! Epigram generates random phrases from a pool of categorized words.
+//! Run `epigram --help` for CLI syntax.
 
 use clap::Parser;
 use clio::{self, Input};

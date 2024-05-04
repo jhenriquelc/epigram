@@ -130,6 +130,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ec6d3da8e550377a85339063af6e3735f4b1d9392108da4e083a1b3b9820288"
 
 [[package]]
+name = "epigram"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "clio",
+ "configparser",
+ "rand",
+ "strum",
+ "strum_macros",
+]
+
+[[package]]
 name = "errno"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -196,18 +208,6 @@ name = "linux-raw-sys"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01cda141df6706de531b6c46c3a33ecca755538219bd484262fa09410c13539c"
-
-[[package]]
-name = "oracle"
-version = "0.1.0"
-dependencies = [
- "clap",
- "clio",
- "configparser",
- "rand",
- "strum",
- "strum_macros",
-]
 
 [[package]]
 name = "ppv-lite86"
