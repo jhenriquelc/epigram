@@ -1,3 +1,8 @@
+//! > **CLI random phrase generator**
+//!
+//! Oracle generates random phrases from a pool of categorized words.
+//! Run `oracle --help` for CLI syntax.
+
 use clap::Parser;
 use clio::{self, Input};
 use configparser::ini::Ini;
@@ -10,6 +15,7 @@ type IniMap = HashMap<String, HashMap<String, Option<String>>>;
 
 const BUILT_IN_DICTIONARY_STR: &str = include_str!("./dictionary.ini");
 
+/// Possible errors when creating a `Dictionary`
 #[derive(Debug)]
 pub enum Error {
     InvalidHeader(String),
@@ -54,6 +60,7 @@ impl std::error::Error for Error {
     }
 }
 
+/// Represents a word category
 #[derive(Debug, EnumIter, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PartOfSpeech {
     Verb,
@@ -87,6 +94,7 @@ impl TryFrom<&str> for PartOfSpeech {
     }
 }
 
+/// Holds a `HashMap<PartOfSpeech, Vec<&str>` and associated logic for generating random phrases.
 #[derive(Debug)]
 pub struct Dictionary<'a> {
     map: HashMap<PartOfSpeech, Vec<&'a str>>,
@@ -128,6 +136,8 @@ impl<'a> Default for Dictionary<'a> {
 }
 
 impl<'a> Dictionary<'a> {
+    /// Creates a new empty Dictionary.
+    /// The `map` contains default values for every valid key.  
     pub fn new() -> Self {
         let mut dict = Dictionary {
             map: HashMap::new(),
@@ -138,6 +148,8 @@ impl<'a> Dictionary<'a> {
         dict
     }
 
+    /// Attempts to generate a random phrase with the words contained in the dictionary.
+    /// Returns Some if all of the fields used for generation contain at least one word, otherwire returns None.
     pub fn get_phrase(&self) -> Option<String> {
         let mut rng = rand::thread_rng();
         let adjective = self
@@ -156,12 +168,15 @@ impl<'a> Dictionary<'a> {
         Some(format!("The {adjective} {noun} {verb} {adverb}."))
     }
 
+    /// Gets an immutable reference to the vector related to the PartOfSpeech passed to it.
     pub fn get_part_of_speech(&self, part_of_speech: PartOfSpeech) -> &Vec<&str> {
         self.map.get(&part_of_speech).expect(
             "Dictionary should be initialized with empty vectors for each PartOfSpeech variant",
+            // the initializer guarantees all possible keys contain a default value
         )
     }
 
+    /// Gets a mutable reference to the vector related to the PartOfSpeech passed to it.
     pub fn get_part_of_speech_mut(&mut self, part_of_speech: PartOfSpeech) -> &mut Vec<&'a str> {
         self.map.entry(part_of_speech).or_default()
     }
@@ -170,12 +185,15 @@ impl<'a> Dictionary<'a> {
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
+    /// Path to ini-like file with categorized words
     #[arg(value_parser)]
     dictionary_file: Option<Input>,
 
+    /// Number of phrases to generate
     #[arg(short = 'n', long, default_value_t = 1, group = "len")]
     count: u128,
 
+    /// Generate phrases indefinetly
     #[arg(short, long, group = "len")]
     infinite: bool,
 }
@@ -185,10 +203,11 @@ fn main() -> Result<(), u8> {
         dictionary_file: input,
         count,
         infinite,
-    } = Args::parse();
+    } = Args::parse(); // get CLI arguments
 
     let ini_string = if let Some(mut input) = input {
         if input.is_tty() {
+            // display message when getting string from user input
             if cfg!(unix) {
                 eprintln!("Reading ini dictionary from stdin, close with ^D (EOF)...")
             } else if cfg!(windows) {
@@ -207,6 +226,7 @@ fn main() -> Result<(), u8> {
         }
         buf
     } else {
+        // use built-in dictionary when a file path is not supplied
         BUILT_IN_DICTIONARY_STR.to_string()
     };
 
