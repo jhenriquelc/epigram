@@ -33,7 +33,7 @@ struct Args {
     infinite: bool,
 }
 
-fn main() -> Result<(), u8> {
+fn main() {
     let Args {
         dictionary_file: input,
         count,
@@ -91,5 +91,5 @@ fn main() -> Result<(), u8> {
         }
     }
 
-    Ok(())
+    exit(0);
 }
