@@ -1,16 +1,16 @@
+use configparser::ini::Ini;
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use strum::IntoEnumIterator;
 
 use crate::part_of_speech::PartOfSpeech;
 
-type IniMap = HashMap<String, HashMap<String, Option<String>>>;
-
 /// Possible errors when creating a `Dictionary`
 #[derive(Debug)]
 pub enum DictionaryError {
     InvalidHeader(String),
     MissingHeader(Vec<PartOfSpeech>),
+    IniError(String),
 }
 
 impl std::fmt::Display for DictionaryError {
@@ -36,6 +36,8 @@ impl std::fmt::Display for DictionaryError {
                     "The following part of speech headers are missing from your dictionary: {}",
                     pos_vec_to_string(missing_headers)
                 ),
+                DictionaryError::IniError(diagnostic) =>
+                    format!("Could not parse ini: {}", diagnostic),
             }
         )
     }
@@ -57,10 +59,15 @@ pub struct Dictionary {
     map: HashMap<PartOfSpeech, Vec<String>>,
 }
 
-impl TryFrom<IniMap> for Dictionary {
+impl TryFrom<String> for Dictionary {
     type Error = DictionaryError;
 
-    fn try_from(mut ini_map: IniMap) -> Result<Dictionary, DictionaryError> {
+    fn try_from(value: String) -> Result<Dictionary, DictionaryError> {
+        let mut ini_map = match Ini::new().read(value) {
+            Ok(map) => Ok(map),
+            Err(e) => Err(DictionaryError::IniError(e)),
+        }?;
+
         let mut dict = Dictionary::new();
         for (section, mut keys) in ini_map.drain() {
             let keys: Vec<String> = keys.drain().map(|(key, _)| key).collect();

@@ -5,7 +5,6 @@
 
 use clap::Parser;
 use clio::{self, Input};
-use configparser::ini::Ini;
 
 use std::{self, process::exit};
 
@@ -41,7 +40,7 @@ fn main() -> Result<(), u8> {
         infinite,
     } = Args::parse(); // get CLI arguments
 
-    let ini_string = if let Some(mut input) = input {
+    let dict_string = if let Some(mut input) = input {
         if input.is_tty() {
             // display message when getting string from user input
             if cfg!(unix) {
@@ -66,20 +65,11 @@ fn main() -> Result<(), u8> {
         BUILT_IN_DICTIONARY_STR.to_string()
     };
 
-    let parsed = Ini::new().read(ini_string);
-    let map = match parsed {
-        Ok(map) => map,
-        Err(e) => {
-            eprintln!("Could not parse ini: {}", e);
-            exit(1);
-        }
-    };
-
-    let dict = match Dictionary::try_from(map) {
+    let dict = match Dictionary::try_from(dict_string) {
         Ok(dict) => dict,
         Err(e) => {
             eprintln!("{}", e);
-            exit(3);
+            exit(1);
         }
     };
 
