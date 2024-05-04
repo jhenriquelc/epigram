@@ -110,14 +110,20 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
         let mut missing_parts_of_speech = Vec::new();
         for part_of_speech in PartOfSpeech::iter() {
             let field = dict.get_part_of_speech(part_of_speech);
-            if field.len() == 0 {
+            if field.is_empty() {
                 missing_parts_of_speech.push(part_of_speech);
             }
         }
-        if missing_parts_of_speech.len() != 0 {
+        if !missing_parts_of_speech.is_empty() {
             return Err(Error::MissingHeader(missing_parts_of_speech));
         }
         Ok(dict)
+    }
+}
+
+impl<'a> Default for Dictionary<'a> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -127,7 +133,7 @@ impl<'a> Dictionary<'a> {
             map: HashMap::new(),
         };
         for part_of_speech in PartOfSpeech::iter() {
-            dict.map.entry(part_of_speech).or_insert(Vec::new());
+            dict.map.entry(part_of_speech).or_default();
         }
         dict
     }
@@ -157,7 +163,7 @@ impl<'a> Dictionary<'a> {
     }
 
     pub fn get_part_of_speech_mut(&mut self, part_of_speech: PartOfSpeech) -> &mut Vec<&'a str> {
-        self.map.entry(part_of_speech).or_insert(Vec::new())
+        self.map.entry(part_of_speech).or_default()
     }
 }
 
