@@ -75,7 +75,7 @@ fn main() -> Result<(), u8> {
         }
     };
 
-    let dict = match Dictionary::try_from(&map) {
+    let dict = match Dictionary::try_from(map) {
         Ok(dict) => dict,
         Err(e) => {
             eprintln!("{}", e);

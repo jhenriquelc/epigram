@@ -53,17 +53,17 @@ impl std::error::Error for DictionaryError {
 
 /// Holds a `HashMap<PartOfSpeech, Vec<&str>` and associated logic for generating random phrases.
 #[derive(Debug)]
-pub struct Dictionary<'a> {
-    map: HashMap<PartOfSpeech, Vec<&'a str>>,
+pub struct Dictionary {
+    map: HashMap<PartOfSpeech, Vec<String>>,
 }
 
-impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
+impl TryFrom<IniMap> for Dictionary {
     type Error = DictionaryError;
 
-    fn try_from(ini_map: &'a IniMap) -> Result<Dictionary<'a>, DictionaryError> {
+    fn try_from(mut ini_map: IniMap) -> Result<Dictionary, DictionaryError> {
         let mut dict = Dictionary::new();
-        for (section, keys) in ini_map.iter() {
-            let keys: Vec<&str> = keys.iter().map(|(key, _)| key.as_str()).collect();
+        for (section, mut keys) in ini_map.drain() {
+            let keys: Vec<String> = keys.drain().map(|(key, _)| key).collect();
 
             if let Ok(part_of_speech) = PartOfSpeech::try_from(section.as_str()) {
                 let field = dict.get_part_of_speech_mut(part_of_speech);
@@ -86,13 +86,13 @@ impl<'a> TryFrom<&'a IniMap> for Dictionary<'a> {
     }
 }
 
-impl<'a> Default for Dictionary<'a> {
+impl Default for Dictionary {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a> Dictionary<'a> {
+impl Dictionary {
     /// Creates a new empty Dictionary.
     /// The `map` contains default values for every valid key.  
     pub fn new() -> Self {
@@ -126,7 +126,7 @@ impl<'a> Dictionary<'a> {
     }
 
     /// Gets an immutable reference to the vector related to the PartOfSpeech passed to it.
-    pub fn get_part_of_speech(&self, part_of_speech: PartOfSpeech) -> &Vec<&str> {
+    pub fn get_part_of_speech(&self, part_of_speech: PartOfSpeech) -> &Vec<String> {
         self.map.get(&part_of_speech).expect(
             "Dictionary should be initialized with empty vectors for each PartOfSpeech variant",
             // the initializer guarantees all possible keys contain a default value
@@ -134,7 +134,7 @@ impl<'a> Dictionary<'a> {
     }
 
     /// Gets a mutable reference to the vector related to the PartOfSpeech passed to it.
-    pub fn get_part_of_speech_mut(&mut self, part_of_speech: PartOfSpeech) -> &mut Vec<&'a str> {
+    pub fn get_part_of_speech_mut(&mut self, part_of_speech: PartOfSpeech) -> &mut Vec<String> {
         self.map.entry(part_of_speech).or_default()
     }
 }
