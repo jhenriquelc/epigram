@@ -1,4 +1,4 @@
-use configparser::ini::Ini;
+use configparser::ini::{Ini, IniDefault};
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use strum::IntoEnumIterator;
@@ -63,7 +63,14 @@ impl TryFrom<String> for Dictionary {
     type Error = DictionaryError;
 
     fn try_from(value: String) -> Result<Dictionary, DictionaryError> {
-        let mut ini_map = match Ini::new().read(value) {
+        let default_ini = {
+            let mut default = IniDefault::default();
+            default.case_sensitive = true;
+            default.multiline = false;
+            default
+        };
+
+        let mut ini_map = match Ini::new_from_defaults(default_ini).read(value) {
             Ok(map) => Ok(map),
             Err(e) => Err(DictionaryError::IniError(e)),
         }?;
