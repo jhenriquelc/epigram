@@ -1,0 +1,43 @@
+{
+    // https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'epigram'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=epigram",
+                    "--package=epigram"
+                ],
+                "filter": {
+                    "name": "epigram",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'epigram'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=epigram",
+                    "--package=epigram"
+                ],
+                "filter": {
+                    "name": "epigram",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
