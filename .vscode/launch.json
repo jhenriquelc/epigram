@@ -6,6 +6,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug executable 'epigram'",
+            "sourceLanguages": ["rust"],
             "cargo": {
                 "args": [
                     "build",
@@ -24,6 +25,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug unit tests in executable 'epigram'",
+            "sourceLanguages": ["rust"],
             "cargo": {
                 "args": [
                     "test",

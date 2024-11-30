@@ -9,11 +9,10 @@ use clio::{self, Input};
 use std::{self, process::exit};
 
 pub mod dictionary;
-pub mod part_of_speech;
 #[cfg(test)]
 mod tests;
 
-use dictionary::{Dictionary, DictionaryError};
+use dictionary::Dictionary;
 
 const BUILT_IN_DICTIONARY_STR: &str = include_str!("./dictionary.ini");
 
