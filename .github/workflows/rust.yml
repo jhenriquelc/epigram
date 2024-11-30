@@ -1,0 +1,32 @@
+name: Rust
+      
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: '0 0 15 */2 *'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: Swatinem/rust-cache@v2.7.5
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Clear cache # clear cache every other month (https://github.com/Swatinem/rust-cache/issues/181)
+      if: github.event_name =='schedule'
+      run: |
+        cargo clean
+        rm -rf ~/.cargo/registry
+        rm -rf ~/.cargo/git
+
