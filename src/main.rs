@@ -14,7 +14,7 @@ mod tests;
 
 use dictionary::Dictionary;
 
-const BUILT_IN_DICTIONARY_STR: &str = include_str!("./dictionary.ini");
+const BUILT_IN_DICTIONARY_STR: &str = include_str!("./dictionary.toml");
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

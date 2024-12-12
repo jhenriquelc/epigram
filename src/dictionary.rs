@@ -1,15 +1,19 @@
-use configparser::ini::{Ini, IniDefault};
 #[allow(unused_imports)]
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
+use toml::{self, Table};
 
 /// Possible errors when creating a `Dictionary`
 #[derive(Debug)]
 pub enum DictionaryError {
-    MissingConfigHeader,
+    MissingConfigTable,
+    MissingConfigTypeHeader,
+    InvalidConfigTypeHeader,
     MissingFormatKey,
     MissingFormatString,
-    IniError(String),
+    TomlError(toml::de::Error),
+    MissingClassesTable,
+    InvalidClassesKey,
 }
 
 impl std::fmt::Display for DictionaryError {
@@ -18,12 +22,15 @@ impl std::fmt::Display for DictionaryError {
             f,
             "{}",
             match self {
-                DictionaryError::IniError(diagnostic) =>
-                    format!("Could not parse ini: {}", diagnostic),
-                DictionaryError::MissingConfigHeader => "'config' header is missing".to_owned(),
-                DictionaryError::MissingFormatKey =>
-                    "'format' key missing in 'config' header".to_owned(),
-                DictionaryError::MissingFormatString => "'format' key missing its value".to_owned(),
+                DictionaryError::TomlError(diagnostic) =>
+                    format!("Could not parse toml: {}", diagnostic),
+                DictionaryError::MissingConfigTable => "'config' table is missing".to_owned(),
+                DictionaryError::MissingFormatString => "config.format is missing".to_owned(),
+                DictionaryError::MissingConfigTypeHeader => "config.type key is missing".to_owned(),
+                DictionaryError::MissingFormatKey => todo!(),
+                DictionaryError::InvalidConfigTypeHeader => todo!(),
+                DictionaryError::MissingClassesTable => todo!(),
+                DictionaryError::InvalidClassesKey => todo!(),
             }
         )
     }
@@ -49,38 +56,57 @@ pub struct Dictionary {
 impl TryFrom<String> for Dictionary {
     type Error = DictionaryError;
 
-    fn try_from(value: String) -> Result<Dictionary, DictionaryError> {
-        // set up ini settings
-        let default_ini = {
-            let mut default = IniDefault::default();
-            default.case_sensitive = true;
-            default.multiline = false;
-            default
-        };
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let parsed_file = value
+            .parse::<Table>()
+            .map_err(|e| DictionaryError::TomlError(e))?;
 
-        // read ini file
-        let mut ini_map = match Ini::new_from_defaults(default_ini).read(value) {
-            Ok(map) => Ok(map),
-            Err(e) => Err(DictionaryError::IniError(e)),
-        }?;
+        // Get config table
+        let config = parsed_file
+            .get("config")
+            .ok_or(DictionaryError::MissingConfigTable)?
+            .as_table()
+            .ok_or(DictionaryError::MissingConfigTable)?;
 
-        // extract format string
-        let format: String = ini_map
-            .remove("config")
-            .ok_or(DictionaryError::MissingConfigHeader)?
-            .remove("format")
-            .ok_or(DictionaryError::MissingFormatKey)?
-            .ok_or(DictionaryError::MissingFormatString)?;
+        // Fail if the config type isn't "static"
+        assert_eq!(
+            config
+                .get("type")
+                .ok_or(DictionaryError::MissingConfigTypeHeader)?
+                .as_str()
+                .ok_or(DictionaryError::InvalidConfigTypeHeader)?
+                , "static"
+        );
 
-        // extract parts of speech and their respective words
+        // Get the format string
+        let format = config
+            .get("format")
+            .ok_or(DictionaryError::MissingFormatString)?
+            .as_str()
+            .ok_or(DictionaryError::MissingFormatString)?
+            .to_owned();
+
+        // Get the map for the dictionary
         let mut map = HashMap::new();
-        for (section, mut keys) in ini_map.drain() {
-            let keys: Vec<String> = keys.drain().map(|(key, _)| key).collect();
-
-            let part_of_speech = map.entry(section).or_default();
-            *part_of_speech = keys;
+        for (part_of_speech, words) in parsed_file
+            .get("classes")
+            .ok_or(DictionaryError::MissingClassesTable)?
+            .as_table()
+            .ok_or(DictionaryError::MissingClassesTable)?
+            .iter()
+        {
+            map.insert(
+                part_of_speech.clone(),
+                words
+                    .as_str()
+                    .ok_or(DictionaryError::InvalidClassesKey)?
+                    .split_terminator('\n')
+                    .map(|s| s.to_owned())
+                    .collect(),
+            );
         }
 
+        // Done
         Ok(Dictionary { map, format })
     }
 }
@@ -110,18 +136,5 @@ impl Dictionary {
         }
 
         Some(out)
-    }
-
-    /// Gets an immutable reference to the vector related to the PartOfSpeech passed to it.
-    pub fn get_part_of_speech(&self, part_of_speech: String) -> &Vec<String> {
-        self.map.get(&part_of_speech).expect(
-            "Dictionary should be initialized with empty vectors for each PartOfSpeech variant",
-            // the initializer guarantees all possible keys contain a default value
-        )
-    }
-
-    /// Gets a mutable reference to the vector related to the PartOfSpeech passed to it.
-    pub fn get_part_of_speech_mut(&mut self, part_of_speech: String) -> &mut Vec<String> {
-        self.map.entry(part_of_speech).or_default()
     }
 }

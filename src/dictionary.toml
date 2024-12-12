@@ -1,7 +1,9 @@
 [config]
-format=The {{adjective}} {{noun}} {{verb}} {{adverb}}.
+type = "static"
+format = "The {{adjective}} {{noun}} {{verb}} {{adverb}}."
 
-[verb]
+[classes]
+verb = """
 ran
 walked
 jumped
@@ -110,8 +112,9 @@ wafted
 wandered
 wilted
 yawned
+"""
 
-[noun]
+noun = """
 chair
 table
 book
@@ -423,8 +426,8 @@ data scientist
 information security analyst
 network administrator
 systems administrator
-
-[adjective]
+"""
+adjective = """
 happy
 sad
 angry
@@ -675,8 +678,9 @@ fictional
 genuine
 pretend
 true
+"""
 
-[adverb]
+adverb = """
 abruptly
 absentmindedly
 accidentally
@@ -927,3 +931,4 @@ surprisingly
 swiftly
 sympathetically
 systematically
+"""
