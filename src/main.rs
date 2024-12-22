@@ -8,13 +8,13 @@ use clio::{self, Input};
 
 use std::{self, process::exit};
 
-pub mod dictionary;
+pub mod static_phrase_gen;
 #[cfg(test)]
 mod tests;
 
-use dictionary::Dictionary;
+use static_phrase_gen::StaticPhraseGen;
 
-const BUILT_IN_DICTIONARY_STR: &str = include_str!("./dictionary.toml");
+const BUILT_IN_DICTIONARY_STR: &str = include_str!("./static_phrase_gen_example.toml");
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -64,7 +64,7 @@ fn main() {
         BUILT_IN_DICTIONARY_STR.to_string()
     };
 
-    let dict = match Dictionary::try_from(dict_string) {
+    let dict = match StaticPhraseGen::try_from(dict_string) {
         Ok(dict) => dict,
         Err(e) => {
             eprintln!("{}", e);
@@ -72,7 +72,7 @@ fn main() {
         }
     };
 
-    fn print_phrase(dict: &Dictionary) {
+    fn print_phrase(dict: &StaticPhraseGen) {
         println!(
             "{}",
             dict.get_phrase()
