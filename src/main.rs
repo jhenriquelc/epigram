@@ -5,16 +5,15 @@
 
 use clap::Parser;
 use clio::{self, Input};
+use phrase_gen::static_phrase_gen::EXAMPLE_STR as STATIC_PHRASE_GEN_EXAMPLE_STR;
+use phrase_gen::PhraseGen;
 
 use std::{self, process::exit};
 
-pub mod static_phrase_gen;
+pub mod phrase_gen;
+
 #[cfg(test)]
 mod tests;
-
-use static_phrase_gen::StaticPhraseGen;
-
-const BUILT_IN_DICTIONARY_STR: &str = include_str!("./static_phrase_gen_example.toml");
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -39,13 +38,13 @@ fn main() {
         infinite,
     } = Args::parse(); // get CLI arguments
 
-    let dict_string = if let Some(mut input) = input {
+    let pg_definition = if let Some(mut input) = input {
         if input.is_tty() {
             // display message when getting string from user input
             if cfg!(unix) {
-                eprintln!("Reading ini dictionary from stdin, close with ^D (EOF)...")
+                eprintln!("Reading toml definitions from stdin, close with ^D (EOF)...")
             } else if cfg!(windows) {
-                eprintln!("Reading ini dictionary from input, close with Ctrl+Z (EOF)...")
+                eprintln!("Reading toml definitions from input, close with Ctrl+Z (EOF)...")
             }
         }
 
@@ -60,33 +59,42 @@ fn main() {
         }
         buf
     } else {
-        // use built-in dictionary when a file path is not supplied
-        BUILT_IN_DICTIONARY_STR.to_string()
+        // use built-in example when a file path is not supplied
+        STATIC_PHRASE_GEN_EXAMPLE_STR.to_string()
     };
 
-    let dict = match StaticPhraseGen::try_from(dict_string) {
+    // turn into toml table
+    let pg_definition = match pg_definition.parse::<toml::Table>() {
+        Ok(pg_table) => pg_table,
+        Err(e) => {
+            eprintln!("Failed to process toml: {e}");
+            exit(3)
+        }
+    };
+
+    // instantiate PhraseGen
+    let pg = match phrase_gen::phrase_gen_from_toml(pg_definition) {
         Ok(dict) => dict,
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("Failed to initialise PhraseGen: {}", e);
             exit(1);
         }
     };
 
-    fn print_phrase(dict: &StaticPhraseGen) {
+    fn print_phrase(pg: &dyn PhraseGen) {
         println!(
             "{}",
-            dict.get_phrase()
-                .expect("all dictionary parts of speech should be filled.")
+            pg.get_phrase().expect("PhraseGen should generate a phrase")
         )
     }
 
     if infinite {
         loop {
-            print_phrase(&dict)
+            print_phrase(pg.as_ref())
         }
     } else {
         for _ in 0..count {
-            print_phrase(&dict)
+            print_phrase(pg.as_ref())
         }
     }
 

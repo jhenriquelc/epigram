@@ -1,7 +1,10 @@
+use super::PhraseGen;
 #[allow(unused_imports)]
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
-use toml::{self, Table};
+use toml;
+
+pub const EXAMPLE_STR: &str = include_str!("./examples/static.toml");
 
 /// Possible errors when creating a `StaticPhraseGen`
 #[derive(Debug)]
@@ -11,7 +14,6 @@ pub enum StaticPhraseGenError {
     InvalidConfigTypeHeader,
     MissingFormatKey,
     MissingFormatString,
-    TomlError(toml::de::Error),
     MissingClassesTable,
     InvalidClassesKey,
 }
@@ -22,11 +24,10 @@ impl std::fmt::Display for StaticPhraseGenError {
             f,
             "{}",
             match self {
-                StaticPhraseGenError::TomlError(diagnostic) =>
-                    format!("Could not parse toml: {}", diagnostic),
                 StaticPhraseGenError::MissingConfigTable => "'config' table is missing".to_owned(),
                 StaticPhraseGenError::MissingFormatString => "config.format is missing".to_owned(),
-                StaticPhraseGenError::MissingConfigTypeHeader => "config.type key is missing".to_owned(),
+                StaticPhraseGenError::MissingConfigTypeHeader =>
+                    "config.type key is missing".to_owned(),
                 StaticPhraseGenError::MissingFormatKey => todo!(),
                 StaticPhraseGenError::InvalidConfigTypeHeader => todo!(),
                 StaticPhraseGenError::MissingClassesTable => todo!(),
@@ -53,16 +54,12 @@ pub struct StaticPhraseGen {
     format: String,
 }
 
-impl TryFrom<String> for StaticPhraseGen {
+impl TryFrom<toml::Table> for StaticPhraseGen {
     type Error = StaticPhraseGenError;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        let parsed_file = value
-            .parse::<Table>()
-            .map_err(|e| StaticPhraseGenError::TomlError(e))?;
-
+    fn try_from(value: toml::Table) -> Result<Self, Self::Error> {
         // Get config table
-        let config = parsed_file
+        let config = value
             .get("config")
             .ok_or(StaticPhraseGenError::MissingConfigTable)?
             .as_table()
@@ -74,8 +71,8 @@ impl TryFrom<String> for StaticPhraseGen {
                 .get("type")
                 .ok_or(StaticPhraseGenError::MissingConfigTypeHeader)?
                 .as_str()
-                .ok_or(StaticPhraseGenError::InvalidConfigTypeHeader)?
-                , "static"
+                .ok_or(StaticPhraseGenError::InvalidConfigTypeHeader)?,
+            "static"
         );
 
         // Get the format string
@@ -88,7 +85,7 @@ impl TryFrom<String> for StaticPhraseGen {
 
         // Get the map for the dictionary
         let mut map = HashMap::new();
-        for (part_of_speech, words) in parsed_file
+        for (part_of_speech, words) in value
             .get("classes")
             .ok_or(StaticPhraseGenError::MissingClassesTable)?
             .as_table()
@@ -121,15 +118,24 @@ impl Default for StaticPhraseGen {
     }
 }
 
-impl StaticPhraseGen {
-    /// Attempts to generate a random phrase with the words contained in the dictionary.
+impl PhraseGen for StaticPhraseGen {
+    /// Returns a copy of the format string with the category keys replaced with one of its values.
     /// Returns Some if all of the fields used for generation contain at least one word, otherwire returns None.
-    pub fn get_phrase(&self) -> Option<String> {
-        let mut rng = rand::thread_rng();
+    fn get_phrase(&self) -> Option<String> {
+        // initialize rng
+        let mut rng = rand::thread_rng(); // probably should do in struct initialization?
+
+        // initialize return value
         let mut out = self.format.clone();
+
+        // go through every word class provided
         for (part_of_speech, words) in &self.map {
+            // create string to search for
             let key = format!("{{{{{part_of_speech}}}}}"); // {{ → {. damn you, escape sequences!!
+
+            // substitute all occurences of the search string
             while out.contains(&key) {
+                // FIXME: if a substituted value contains a searched string it will be replaced! Maybe use regex matches?
                 let word = words.choose(&mut rng)?;
                 out = out.replacen(&key, word, 1);
             }

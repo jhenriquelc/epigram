@@ -1,8 +1,17 @@
 [config]
-type = "static"
+# Base definitions for a PhraseGen
+
+# Define the type of PhraseGen to be used
+type = "static" # StaticPhraseGen
+
+# Keys in the 'classes' table surrounded by double curly braces will be replaced by a random entry.
 format = "The {{adjective}} {{noun}} {{verb}} {{adverb}}."
 
 [classes]
+# Keys here are used to name the category of entries.
+# The list of entries should be a long string, with entries separated by newlines.
+# There is not a way to escape newlines yet, include them in the format string.
+
 verb = """
 ran
 walked
@@ -427,6 +436,7 @@ information security analyst
 network administrator
 systems administrator
 """
+
 adjective = """
 happy
 sad
