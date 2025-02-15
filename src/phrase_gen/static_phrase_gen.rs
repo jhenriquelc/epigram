@@ -1,6 +1,5 @@
 use super::PhraseGen;
-#[allow(unused_imports)]
-use rand::seq::SliceRandom;
+use rand::prelude::IndexedRandom;
 use std::collections::HashMap;
 use toml;
 
@@ -123,7 +122,7 @@ impl PhraseGen for StaticPhraseGen {
     /// Returns Some if all of the fields used for generation contain at least one word, otherwire returns None.
     fn get_phrase(&self) -> Option<String> {
         // initialize rng
-        let mut rng = rand::thread_rng(); // probably should do in struct initialization?
+        let mut rng = rand::rng(); // FIXME: should do in struct initialization?
 
         // initialize return value
         let mut out = self.format.clone();
