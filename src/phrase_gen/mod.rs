@@ -1,54 +1,79 @@
-pub mod static_phrase_gen;
+pub mod phrase_gen_build_error;
 
-use std::error::Error;
+use phrase_gen_build_error::PhraseGenBuildError;
+use std::collections::HashMap;
 use toml;
 
-use static_phrase_gen::StaticPhraseGen;
-pub trait PhraseGen {
-    /// Attempts to generate a random phrase.
-    /// Returns Some if all of the fields used for generation contain at least one word, otherwire returns None.
-    fn get_phrase(&self) -> Option<String>;
-}
-
+/// Associates a word category with a vector of words to generate phrases with static structure.
 #[derive(Debug)]
-pub enum PhraseGenBuilderError {
-    UnknownConfigType(String),
-    MissingConfigTypeStr,
-    BuildingError(Box<dyn Error>),
+pub struct PhraseGen {
+    map: HashMap<String, Vec<String>>,
+    format: String,
 }
 
-impl std::fmt::Display for PhraseGenBuilderError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                PhraseGenBuilderError::UnknownConfigType(t) => format!("Unknown config.type: {t}"),
-                PhraseGenBuilderError::MissingConfigTypeStr =>
-                    "config.type key missing.".to_owned(),
-                PhraseGenBuilderError::BuildingError(_error) => todo!(),
-            }
-        )
+impl TryFrom<toml::Table> for PhraseGen {
+    type Error = PhraseGenBuildError;
+
+    fn try_from(value: toml::Table) -> Result<Self, Self::Error> {
+        // Get config table
+        let config = value
+            .get("config")
+            .ok_or(PhraseGenBuildError::MissingField("config".to_owned()))?
+            .as_table()
+            .ok_or(PhraseGenBuildError::WrongFieldType("config".to_owned()))?;
+
+        // Fail if the config type isn't "static"
+        assert_eq!(
+            config
+                .get("type")
+                .ok_or(PhraseGenBuildError::MissingField("config.type".to_owned()))?
+                .as_str()
+                .ok_or(PhraseGenBuildError::WrongFieldType(
+                    "config.type".to_owned()
+                ))?,
+            "static"
+        );
+
+        // Get the format string
+        let format = config
+            .get("format")
+            .ok_or(PhraseGenBuildError::MissingField(
+                "config.format".to_owned(),
+            ))?
+            .as_str()
+            .ok_or(PhraseGenBuildError::WrongFieldType(
+                "config.format".to_owned(),
+            ))?
+            .to_owned();
+
+        // Get the map for the dictionary
+        let mut map = HashMap::new();
+        for (part_of_speech, words) in value
+            .get("classes")
+            .ok_or(PhraseGenBuildError::MissingField("classes".to_owned()))?
+            .as_table()
+            .ok_or(PhraseGenBuildError::WrongFieldType("classes".to_owned()))?
+            .into_iter()
+        {
+            map.insert(
+                part_of_speech.clone(),
+                words
+                    .as_str()
+                    .ok_or(PhraseGenBuildError::WrongFieldType(format!(
+                        "classes.{part_of_speech}"
+                    )))?
+                    .split_terminator('\n')
+                    .map(|s| s.to_owned())
+                    .collect(),
+            );
+        }
+
+        // Done
+        Ok(PhraseGen { map, format })
     }
 }
-
-impl std::error::Error for PhraseGenBuilderError {}
 
 /// Tries to get config.type as a string from a TOML.
 pub fn get_config_type_from_toml(t: &toml::Table) -> Option<&str> {
     t.get("config")?.as_table()?.get("type")?.as_str()
-}
-
-/// Creates a PhraseGen according to the config.type specified in the TOML.
-pub fn phrase_gen_from_toml(t: toml::Table) -> Result<Box<dyn PhraseGen>, PhraseGenBuilderError> {
-    let config_type =
-        get_config_type_from_toml(&t).ok_or(PhraseGenBuilderError::MissingConfigTypeStr)?;
-
-    match config_type {
-        "static" => match StaticPhraseGen::try_from(t) {
-            Err(e) => Err(PhraseGenBuilderError::BuildingError(Box::new(e))),
-            Ok(pg) => Ok(Box::new(pg)),
-        },
-        other => Err(PhraseGenBuilderError::UnknownConfigType(other.to_owned())),
-    }
 }

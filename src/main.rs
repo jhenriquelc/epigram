@@ -5,7 +5,7 @@
 
 use clap::Parser;
 use clio::{self, Input};
-use phrase_gen::static_phrase_gen::EXAMPLE_STR as STATIC_PHRASE_GEN_EXAMPLE_STR;
+use phrase_gen::phrase_gen_build_error::EXAMPLE_STR as STATIC_PHRASE_GEN_EXAMPLE_STR;
 use phrase_gen::PhraseGen;
 
 use std::{self, process::exit};
@@ -73,7 +73,7 @@ fn main() {
     };
 
     // instantiate PhraseGen
-    let pg = match phrase_gen::phrase_gen_from_toml(pg_definition) {
+    let pg = match phrase_gen::PhraseGen::try_from(pg_definition) {
         Ok(dict) => dict,
         Err(e) => {
             eprintln!("Failed to initialise PhraseGen: {}", e);
@@ -81,7 +81,7 @@ fn main() {
         }
     };
 
-    fn print_phrase(pg: &dyn PhraseGen) {
+    fn print_phrase(pg: &PhraseGen) {
         println!(
             "{}",
             pg.get_phrase().expect("PhraseGen should generate a phrase")
@@ -90,11 +90,11 @@ fn main() {
 
     if infinite {
         loop {
-            print_phrase(pg.as_ref())
+            print_phrase(&pg)
         }
     } else {
         for _ in 0..count {
-            print_phrase(pg.as_ref())
+            print_phrase(&pg)
         }
     }
 
